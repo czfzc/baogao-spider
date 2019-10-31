@@ -41,8 +41,6 @@ public class Main implements Runnable{
             System.out.println("usage: \nshiyanbaogao.jar nameIndex[defaut:0] baogaoIndex[defaut:0] startIdIndex[defaut:10000] ");
         }
 
-        System.out.println("started: "+args[0]);
-
         if(args.length>0)
             nameIndex = Integer.valueOf(args[0]);
         if(args.length>1)
@@ -51,6 +49,11 @@ public class Main implements Runnable{
             initValue = Integer.valueOf(args[2]);
 
         init();
+
+   /* for(int i=0;i<10;i++){
+            reset();
+            System.out.println("\t" + name + "\t" + id + "\t" + nameIndex + "\t" +shiyan+"\t");
+        }*/
 
     }
 
@@ -115,9 +118,7 @@ public class Main implements Runnable{
         isReseting=true;
 
         String nameAndId=getNameAndIdByIndex(nameIndex++);
-
-        if(shiyan==null)
-            shiyan=getShiyanByIndex(shiyanIndex);
+        shiyan=getShiyanByIndex(shiyanIndex);
 
         if(nameAndId==null){
             System.out.println("finished one!");
@@ -128,48 +129,46 @@ public class Main implements Runnable{
                 System.out.println("finished all!");
                 System.exit(0);
             }
-        }else{
-            name=nameAndId.split("\t")[0];
-            id=nameAndId.split("\t")[1];
         }
 
+        name=nameAndId.split("\t")[0];
+        id=nameAndId.split("\t")[1];
+
         uri=id+"-"+name+"-"+shiyan;
-        nameIndex++;
         i=initValue;
 
         isReseting=false;
+        System.out.println("\t" + name + "\t" + id + "\t" + nameIndex + "\t" +shiyan+"\t");
     }
 
     public static String getNameAndIdByIndex(int index) throws Exception{
         File file=new File(path+"names.txt");
         FileInputStream fs = new FileInputStream(file);
-        InputStreamReader ins = new InputStreamReader(fs,"gbk");
+        InputStreamReader ins = new InputStreamReader(fs,"UTF-8");
         BufferedReader br=new BufferedReader(ins);
-        String line;
+        String line=null;
         for(int k=0;k<=index;k++){
             if((line=br.readLine())==null){
                 return null;
             }
-            name=line.split("\t")[0];
-            id=line.split("\t")[1];
         }
-        return name+"\t"+id;
+        return line.split("\t")[0]+"\t"+line.split("\t")[1];
     }
 
     public static String getShiyanByIndex(int index) throws Exception{
-        String shiyan=null;
+        String shiyanname=null;
         File file=new File(path+"shiyan.txt");
         FileInputStream fs = new FileInputStream(file);
-        InputStreamReader ins = new InputStreamReader(fs,"gbk");
+        InputStreamReader ins = new InputStreamReader(fs,"UTF-8");
         BufferedReader br=new BufferedReader(ins);
         String line;
-        for(int j=0;j<=shiyanIndex;j++){
+        for(int j=0;j<=index;j++){
             if((line=br.readLine())==null){
                 return null;
             }
-            shiyan=line;
+            shiyanname=line;
         }
-        return shiyan;
+        return shiyanname;
     }
 
     public static String sendPost(String url, String param) {
@@ -261,27 +260,30 @@ public class Main implements Runnable{
     @Override
     public void run() {
         try{
-            for(;;++i){
-                int k=i;
-                String url="http://202.199.14.2/model/Center/student/baogao/UpLoadFile/YuXiBaoGao/"+
-                        URLEncoder.encode(uri,"UTF-8")+"-"+(i-1)+".doc";
-                //	System.out.println(url);
-                int code=sendGet(url);
-                if(code==200){
-                    System.out.println("success:"+url);
-                    success++;
-                    System.out.println(URLDecoder.decode(url, "UTF-8"));
-                    Main.download(url,path+shiyan+"/"+URLDecoder.decode(uri, "UTF-8")+".doc");
-                    reset();
-                }else{
-                    printNum++;
-                    if(printNum>maxPrintNum) {
-                        System.out.println(k + ":" + code + "\t" + name + "\t" + id + "\t" + nameIndex + "\t" + success);
-                        printNum = 0;
+            for(;;){
+                if(!isReseting) {
+                    i++;
+                    int k = i;
+                    String url = "http://202.199.14.2/model/Center/student/baogao/UpLoadFile/YuXiBaoGao/" +
+                            URLEncoder.encode(uri, "UTF-8") + "-" + (i - 1) + ".doc";
+                    //	System.out.println(url);
+                    int code = sendGet(url);
+                    if (code == 200) {
+                        System.out.println("success:" + url);
+                        success++;
+                        System.out.println(URLDecoder.decode(url, "UTF-8"));
+                        Main.download(url, path + shiyan + "/" + URLDecoder.decode(uri, "UTF-8") + ".doc");
+                        reset();
+                    } else {
+                        printNum++;
+                        if (printNum > maxPrintNum) {
+                            System.out.println(k + ":" + code + "\t" + name + "\t" + id + "\t" + nameIndex + "\t" + shiyan + "\t" + success);
+                            printNum = 0;
+                        }
                     }
+                    if (i > 99999)
+                        reset();
                 }
-                if(i==99999)
-                    reset();
             }
         }catch(Exception e){
             e.printStackTrace();
